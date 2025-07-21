@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>猜数字游戏</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.css" integrity="sha384-5TcZemv2l/9On385z///+d7MSYlvIEw9FuZTIdZ14vJLqWphw7e7ZPuOiCHJcFCP" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.js" integrity="sha384-cMkvdD8LoxVzGF/RPUKAcvmm49FQ0oxwDF3BGKtDXcEc+T1b2N+teh/OJfpU0jr6" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/contrib/auto-render.min.js" integrity="sha384-hCXGrW6PitJEwbkoStFjeJxv+fSOOQKOPbJxSfM6G5sWZjAyWhXiTIIAmQqnlLlh" crossorigin="anonymous"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        renderMathInElement(document.body, {
+          // customised options
+          // • auto-render specific keys, e.g.:
+          delimiters: [
+              {left: '$$', right: '$$', display: true},
+              {left: '$', right: '$', display: false},
+              {left: '\\(', right: '\\)', display: false},
+              {left: '\\[', right: '\\]', display: true}
+          ],
+          // • rendering keys, e.g.:
+          throwOnError : true
+        });
+    });
+</script>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f5f5f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            color: #333;
+        }
+        
+        /* 开始按钮容器 */
+        .start-container {
+            background-color: #f0f0f0;
+            padding: 50px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        
+        /* 开始游戏按钮 */
+        .start-button {
+            background-color: #8a2be2; /* 蓝紫色 */
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 18px;
+            transition: all 0.3s;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .start-button:hover {
+            background-color: #7b1fa2;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+        }
+        
+        /* 游戏容器 - 初始隐藏 */
+        .game-container {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            width: 90%;
+            max-width: 500px;
+            text-align: center;
+            display: none; /* 初始隐藏 */
+        }
+        
+        h1 {
+            color: #2c3e50;
+            margin-top: 0;
+        }
+        
+        .description {
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+        
+        .input-group {
+            margin: 20px 0;
+        }
+        
+        input {
+            padding: 10px;
+            width: 100px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            text-align: center;
+        }
+        
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        
+        button:hover {
+            background-color: #2980b9;
+        }
+        
+        button:disabled {
+            background-color: #95a5a6;
+            cursor: not-allowed;
+        }
+        
+        .message {
+            margin: 20px 0;
+            padding: 10px;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        
+        .hint {
+            background-color: #f8f9fa;
+            border-left: 4px solid #3498db;
+            padding: 10px;
+            text-align: left;
+        }
+        
+        .guesses {
+            margin-top: 20px;
+        }
+        
+        .guesses span {
+            display: inline-block;
+            margin: 5px;
+            padding: 5px 10px;
+            background-color: #e8f4fc;
+            border-radius: 15px;
+        }
+        
+        .success {
+            color: #27ae60;
+            background-color: #e8f8f0;
+        }
+        
+        .error {
+            color: #e74c3c;
+        }
+        
+        .attempts-left {
+            font-weight: bold;
+            color: #e67e22;
+        }
+    </style>
+</head>
+<body>
+    <!-- 开始游戏按钮容器 -->
+    <div class="start-container" id="start-container">
+        <button class="start-button" id="start-button">Start Game</button>
+    </div>
+    
+    <!-- 游戏主界面 - 初始隐藏 -->
+    <div class="game-container" id="game-container">
+        <h1>猜数字游戏</h1>
+        <p class="description">我已经想好了一个 $1$ 到 $100$ 之间的数字，你有 <span id="max-guesses">$10$</span> 次机会来猜它。</p>
+        
+        <div class="input-group">
+            <input type="number" id="guess-input" min="1" max="100" placeholder="1-100">
+            <button id="guess-button">猜一猜</button>
+            <button id="restart-button" style="display: none;">再玩一次</button>
+        </div>
+        
+        <div id="message" class="message"></div>
+        <div id="hint" class="hint">请输入 1∼100 之间的数字，然后点击"猜一猜"</div>
+        
+        <div class="guesses">
+            <p>已尝试的数字: <span id="guesses-list"></span></p>
+            <p>剩余尝试次数: <span id="attempts-left" class="attempts-left">10</span></p>
+        </div>
+    </div>
+
+    <script>
+        // 游戏变量
+        let targetNumber;
+        let remainingGuesses;
+        const maxGuesses = 10;
+        let guessedNumbers = [];
+        
+        // DOM元素
+        const startContainer = document.getElementById('start-container');
+        const startButton = document.getElementById('start-button');
+        const gameContainer = document.getElementById('game-container');
+        const guessInput = document.getElementById('guess-input');
+        const guessButton = document.getElementById('guess-button');
+        const restartButton = document.getElementById('restart-button');
+        const messageElement = document.getElementById('message');
+        const hintElement = document.getElementById('hint');
+        const guessesListElement = document.getElementById('guesses-list');
+        const attemptsLeftElement = document.getElementById('attempts-left');
+        
+        // 初始化游戏
+        function initGame() {
+            targetNumber = Math.floor(Math.random() * 100) + 1;
+            remainingGuesses = maxGuesses;
+            guessedNumbers = [];
+            
+            guessInput.value = '';
+            guessInput.disabled = false;
+            guessButton.disabled = false;
+            restartButton.style.display = 'none';
+            
+            messageElement.textContent = '';
+            messageElement.className = 'message';
+            hintElement.textContent = '请输入 1∼100 之间的数字，然后点击"猜一猜"';
+            
+            updateGuessesList();
+            attemptsLeftElement.textContent = remainingGuesses;
+            
+            console.log('目标数字:', targetNumber); // 测试用，正式发布时可以移除
+        }
+        
+        // 更新已猜数字列表
+        function updateGuessesList() {
+            guessesListElement.innerHTML = guessedNumbers
+                .map(num => {
+                    if (num < targetNumber) return `<span style="color:blue">${num}↓</span>`;
+                    if (num > targetNumber) return `<span style="color:red">${num}↑</span>`;
+                    return `<span style="color:green">${num}✓</span>`;
+                })
+                .join(' ');
+        }
+        
+        // 处理猜测
+        function handleGuess() {
+            const guess = parseInt(guessInput.value);
+            
+            // 验证输入
+            if (isNaN(guess) || guess < 1 || guess > 100) {
+                messageElement.textContent = '请输入 1∼100 之间的有效数字！';
+                messageElement.className = 'message error';
+                return;
+            }
+            
+            // 检查是否重复猜测
+            if (guessedNumbers.includes(guess)) {
+                messageElement.textContent = '你已经猜过这个数字了，试试别的吧！';
+                messageElement.className = 'message error';
+                return;
+            }
+            
+            // 添加到已猜列表
+            guessedNumbers.push(guess);
+            remainingGuesses--;
+            
+            // 更新UI
+            updateGuessesList();
+            attemptsLeftElement.textContent = remainingGuesses;
+            
+            // 检查猜测结果
+            if (guess === targetNumber) {
+                // 猜对了
+                messageElement.textContent = `恭喜你！你在第 ${maxGuesses - remainingGuesses} 次猜对了！`;
+                messageElement.className = 'message success';
+                hintElement.textContent = `正确答案是 ${targetNumber}`;
+                endGame();
+            } else {
+                // 猜错了
+                const direction = guess < targetNumber ? '小' : '大';
+                messageElement.textContent = `太${direction}了！`;
+                messageElement.className = 'message';
+                
+                if (remainingGuesses === 0) {
+                    messageElement.textContent = `很遗憾，你没有猜中。正确的数字是 ${targetNumber}。`;
+                    messageElement.className = 'message error';
+                    endGame();
+                }
+            }
+            
+            guessInput.value = '';
+        }
+        
+        // 游戏结束
+        function endGame() {
+            guessInput.disabled = true;
+            guessButton.disabled = true;
+            restartButton.style.display = 'inline-block';
+        }
+        
+        // 开始游戏
+        function startGame() {
+            startContainer.style.display = 'none';
+            gameContainer.style.display = 'block';
+            initGame();
+        }
+        
+        // 事件监听
+        startButton.addEventListener('click', startGame);
+        guessButton.addEventListener('click', handleGuess);
+        restartButton.addEventListener('click', initGame);
+        
+        // 按Enter键也可以提交
+        guessInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                handleGuess();
+            }
+        });
+    </script>
+</body>
+</html>
